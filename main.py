@@ -1,3 +1,4 @@
+import argparse
 from typing import List
 
 from src.data_steam import DataStream
@@ -18,5 +19,8 @@ def main(data_dir: str):
 
 
 if __name__=='__main__':
-    data_dir = 'data_sample'
-    main(data_dir)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data', type=str, default='data_sample/')
+    args = parser.parse_args()
+
+    main(data_dir=args.data)
