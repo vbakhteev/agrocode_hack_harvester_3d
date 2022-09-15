@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from src.data_steam import DataStream
+from src.data_steam import DataStream, OutputStream
 from src.steps import BaseStep, PointsDetection2d
 
 
@@ -11,11 +11,14 @@ pipeline: List[BaseStep] = [
 
 
 def main(data_dir: str):
-    stream = DataStream(data_dir)
+    istream = DataStream(data_dir)
+    ostream = OutputStream()
     
-    for sample in stream:
+    for sample in istream:
         for step in pipeline:
             sample = step(sample)
+        
+        ostream(sample)
 
 
 if __name__=='__main__':

@@ -24,3 +24,12 @@ class DataStream:
                 "point_cloud": point_cloud,
             }
             yield sample
+
+
+class OutputStream:
+    def __init__(self):
+        pass
+
+    def __call__(self, sample: dict) -> None:
+        # TODO write results
+        pass
