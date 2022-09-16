@@ -1,6 +1,8 @@
 import argparse
 from typing import List
 
+from tqdm import tqdm
+
 from src.data_steam import DataStream, OutputStream
 from src.steps import BaseStep, PointsDetection2d
 
@@ -10,11 +12,11 @@ pipeline: List[BaseStep] = [
 ]
 
 
-def main(data_dir: str):
+def main(data_dir: str, output_dir: str):
     istream = DataStream(data_dir)
-    ostream = OutputStream()
+    ostream = OutputStream(output_dir)
     
-    for sample in istream:
+    for sample in  tqdm(istream, total=len(istream)):
         for step in pipeline:
             sample = step(sample)
         
@@ -26,6 +28,7 @@ def main(data_dir: str):
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, default='data_sample/')
+    parser.add_argument('--out', type=str, default='out/')
     args = parser.parse_args()
 
-    main(data_dir=args.data)
+    main(data_dir=args.data, output_dir=args.out)
