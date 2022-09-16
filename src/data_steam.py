@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pandas as pd
+
 from src.io import read_image, read_json, read_ply, WriteVideoStreamImageio
 
 
@@ -21,6 +23,7 @@ class DataStream:
             point_cloud = read_ply(sample_dir / 'point_cloud.ply')
 
             sample = {
+                "package_id": sample_dir.stem,
                 "color_frame": color_frame,
                 "meta": meta,
                 "point_cloud": point_cloud,
@@ -37,8 +40,16 @@ class OutputStream:
             fps=10,
         )
 
+        self.results = []
+
     def __call__(self, sample: dict) -> None:
         self.video_stream(sample['color_frame'])
 
+        self.results.append({
+            k: sample.get(k) for k in ("package_id", "board_point_x", "board_point_y", "width", "height")
+        })
+
     def close(self) -> None:
         self.video_stream.close()
+        df_results = pd.DataFrame(self.results)
+        df_results.to_csv(self.data_dir / 'submission.csv', index=False)
