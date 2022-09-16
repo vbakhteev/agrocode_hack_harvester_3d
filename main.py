@@ -20,6 +20,8 @@ def main(data_dir: str):
         
         ostream(sample)
 
+    ostream.close()
+
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()

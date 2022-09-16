@@ -33,3 +33,6 @@ class OutputStream:
     def __call__(self, sample: dict) -> None:
         # TODO write results
         pass
+
+    def close(self) -> None:
+        pass
