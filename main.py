@@ -4,11 +4,13 @@ from typing import List
 from tqdm import tqdm
 
 from src.data_steam import DataStream, OutputStream
-from src.steps import BaseStep, PointsDetection2d
+from src.steps import BaseStep, PointsDetection2d, PointsProjection2D
+import matplotlib.pyplot as plt
 
 
 pipeline: List[BaseStep] = [
-    PointsDetection2d(),
+    # PointsDetection2d(),
+    PointsProjection2D()
 ]
 
 
@@ -19,10 +21,12 @@ def main(data_dir: str, output_dir: str):
     for sample in  tqdm(istream, total=len(istream)):
         for step in pipeline:
             sample = step(sample)
-        
-        ostream(sample)
+            print(sample)
+        plt.imshow(sample)
+        plt.show()
+        # ostream(sample)
 
-    ostream.close()
+    # ostream.close()
 
 
 if __name__=='__main__':
