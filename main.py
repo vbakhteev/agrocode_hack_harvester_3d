@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 pipeline: List[BaseStep] = [
-    # PointsDetection2d(),
+    PointsDetection2d(),
     PointsProjection2D()
 ]
 
@@ -21,12 +21,9 @@ def main(data_dir: str, output_dir: str):
     for sample in  tqdm(istream, total=len(istream)):
         for step in pipeline:
             sample = step(sample)
-            print(sample)
-        plt.imshow(sample)
-        plt.show()
-        # ostream(sample)
+        ostream(sample)
 
-    # ostream.close()
+    ostream.close()
 
 
 if __name__=='__main__':

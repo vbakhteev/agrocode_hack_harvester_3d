@@ -19,7 +19,8 @@ class PointsProjection2D(BaseStep):
         cam_params, intrinsic, extrinsic = self._get_extrinsic_and_intrinsic_camera_parameters(meta)
         view_ctl.convert_from_pinhole_camera_parameters(cam_params, allow_arbitrary=True)
         depth = vis.capture_depth_float_buffer(do_render=True)
-        return np.asarray(depth)
+        sample['depth_image'] = np.asarray(depth)
+        return sample
 
     def _get_extrinsic_and_intrinsic_camera_parameters(self, parameters, order='xyz'):
         intrinsic = o3d.camera.PinholeCameraIntrinsic(

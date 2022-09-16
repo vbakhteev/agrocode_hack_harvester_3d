@@ -40,3 +40,5 @@ class WriteVideoStreamImageio:
 
     def close(self):
         self.writer.release()
+
+

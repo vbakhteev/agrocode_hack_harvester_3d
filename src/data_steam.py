@@ -38,8 +38,8 @@ class OutputStream:
         )
 
     def __call__(self, sample: dict) -> None:
-        # self.video_stream(sample['color_frame'])
-        self.video_stream(sample)
+        self.video_stream(sample['color_frame'])
+
 
 
     def close(self) -> None:
