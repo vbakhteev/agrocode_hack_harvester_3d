@@ -15,7 +15,7 @@ class SegmentationStep(BaseStep):
     def call(self, sample):
         orig_img = sample['color_frame']
 
-        mask = segment(orig_img, self.model, self.img_h, self.img_w, self.threshold)
+        mask = segment(orig_img, self.model, self.img_w, self.img_h, self.threshold)
 
         sample['mask'] = mask
 
