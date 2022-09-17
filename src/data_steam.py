@@ -54,11 +54,11 @@ class OutputStream:
 
     def __call__(self, sample: dict) -> None:
         image_draw = sample['color_frame'].copy()
-        # center = (
-        #     np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
-        #     np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
-        # )
-        # cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
+        center = (
+            np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
+            np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
+        )
+        cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
         self.video_stream(image_draw)
 
         self.results.append({

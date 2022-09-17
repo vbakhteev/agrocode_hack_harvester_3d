@@ -11,7 +11,7 @@ class SegmentationStep(BaseStep):
         self.img_w = img_w
         self.threshold = threshold
         self.model = OnnxRuntimeModel(weights_path)
-    
+
     def call(self, sample):
         orig_img = sample['color_frame']
 
@@ -32,6 +32,7 @@ def segment(orig_img, model, w, h, threshold):
     upsampled_mask = cv2.resize(mask, dsize=(orig_img.shape[1], orig_img.shape[0]))
 
     return upsampled_mask
+
 
 class OnnxRuntimeModel:
     def __init__(self, weights_path):

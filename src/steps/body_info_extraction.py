@@ -30,7 +30,7 @@ class BodyInfoExtractionStep(BaseStep):
         image_height, image_width = sample["meta"]["intrinsics"]['height'], sample["meta"]["intrinsics"]['width']
 
         # TODO: Kalman filter continuation
-        if not sample["top_points"].any():
+        if not sample["2d_points"].any():
             sample['center'] = [0, 0]
             sample["length"] = 0
             sample["width"] = 0
@@ -38,7 +38,7 @@ class BodyInfoExtractionStep(BaseStep):
 
         points_on_the_border_status = [
             check_point_is_outside(point, max_y=image_height, max_x=image_width)
-            for point in sample["top_points"][[0, 3, 2, 1]]
+            for point in sample["2d_points"][[0, 3, 2, 1]]
         ]
         keypoints_3d_reconstructed = sample["keypoints_3d"]
         keypoints_3d_reconstructed_filtered = keypoints_3d_reconstructed
