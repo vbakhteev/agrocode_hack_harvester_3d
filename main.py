@@ -1,29 +1,35 @@
 import argparse
+from pathlib import Path
 from typing import List
 
-from src.data_steam import DataStream, OutputStream
-from src.steps import BaseStep, PointsDetection2d
+from tqdm import tqdm
 
+from src.data_steam import DataStream, OutputStream
+from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D
 
 pipeline: List[BaseStep] = [
+    PointsProjection2D(),
     PointsDetection2d(),
+    PointsProjection3D(),
 ]
 
 
-def main(data_dir: str):
+def main(data_dir: str, output_dir: str):
     istream = DataStream(data_dir)
-    ostream = OutputStream()
-    
-    for sample in istream:
+    ostream = OutputStream(Path(output_dir) / Path(data_dir).name)
+
+    for sample in tqdm(istream, total=len(istream)):
         for step in pipeline:
             sample = step(sample)
-        
         ostream(sample)
 
+    ostream.close()
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, default='data_sample/')
+    parser.add_argument('--data', type=str, default='data/20220719_183951/')
+    parser.add_argument('--out', type=str, default='out/')
     args = parser.parse_args()
 
-    main(data_dir=args.data)
+    main(data_dir=args.data, output_dir=args.out)
