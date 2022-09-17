@@ -5,12 +5,20 @@ from typing import List
 from tqdm import tqdm
 
 from src.data_steam import DataStream, OutputStream
+from src.steps import (
+    BaseStep,
+    PointsDetection2d,
+    PointsProjection2D,
+    PointsProjection3D,
+    SegmentationStep,
+)
 from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D, BodyInfoExtractionStep
 
 pipeline: List[BaseStep] = [
     PointsProjection2D(),
     PointsDetection2d(),
     PointsProjection3D(),
+    # SegmentationStep('model.onnx'),
     BodyInfoExtractionStep()
 ]
 
@@ -19,7 +27,7 @@ def main(data_dir: str, output_dir: str):
     istream = DataStream(data_dir)
     ostream = OutputStream(Path(output_dir) / Path(data_dir).name)
 
-    for sample in tqdm(istream, total=len(istream)):
+    for i, sample in tqdm(enumerate(istream), total=len(istream)):
         for step in pipeline:
             sample = step(sample)
         ostream(sample)
