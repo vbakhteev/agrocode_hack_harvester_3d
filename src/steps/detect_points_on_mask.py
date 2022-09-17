@@ -10,7 +10,7 @@ class DetectPointsOnMask(BaseStep):
 
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) == 0:
-            sample['2d_points'] = None
+            sample['top_points'] = None
             return sample
 
         biggest_contour = max(contours, key=cv2.contourArea)
@@ -19,12 +19,7 @@ class DetectPointsOnMask(BaseStep):
         points = get_rectangle_coords(
             biggest_contour, h=mask.shape[0], w=mask.shape[1],
         )
-        sample['2d_points'] = np.array(points)
-
-        img = sample['color_frame']
-        img[mask == 1] = 0
-        for p in points:
-            cv2.circle(img, p, 5, (255, 0, 0), -1)
+        sample['top_points'] = np.array(points)
 
         return sample
 

@@ -120,7 +120,7 @@ class PointsProjection3D(BaseStep):
         pass
 
     def call(self, sample):
-        top_points = sample['2d_points']
+        top_points = sample['top_points']
         # bot_points = sample['bot_points']
         depth_image = sample['depth_image']
         top_phys_coords = []
@@ -135,6 +135,7 @@ class PointsProjection3D(BaseStep):
                 top_phys_coords.append(
                     self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
             sample['top_phys_coords'] = np.asarray(top_phys_coords)
+            sample["top_points"] = sample["top_points"][[0, 3, 2, 1]]
             sample['keypoints_3d'] = np.asarray(top_phys_coords)[[0, 3, 2, 1]]
         # if bot_points.any():
         #     for point in bot_points:

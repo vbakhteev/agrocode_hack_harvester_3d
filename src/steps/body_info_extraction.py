@@ -94,7 +94,7 @@ class BodyInfoExtractionStep(BaseStep):
 
         points_on_the_border_status = [
             check_point_is_outside(point, max_y=image_height, max_x=image_width)
-            for point in sample["top_points"][[0, 3, 2, 1]]
+            for point in sample["top_points"]
         ]
         keypoints_3d_reconstructed = sample["keypoints_3d"]
         keypoints_3d_reconstructed_filtered = keypoints_3d_reconstructed
