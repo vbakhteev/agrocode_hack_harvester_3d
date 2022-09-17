@@ -16,19 +16,27 @@ class DataStream:
     def __len__(self):
         return len(self.paths)
 
+    def __getitem__(self, idx):
+        path = self.paths[idx]
+        return self._process_path(path)
+
     def __iter__(self):
         for sample_dir in self.paths:
-            color_frame = read_image(sample_dir / 'color_frame.png')
-            meta = read_json(sample_dir / 'meta.txt')
-            point_cloud = read_ply(sample_dir / 'point_cloud.ply')
-
-            sample = {
-                "package_id": sample_dir.stem,
-                "color_frame": color_frame,
-                "meta": meta,
-                "point_cloud": point_cloud,
-            }
+            sample = self._process_path(sample_dir)
             yield sample
+
+    def _process_path(self, sample_dir):
+        color_frame = read_image(sample_dir / 'color_frame.png')
+        meta = read_json(sample_dir / 'meta.txt')
+        point_cloud = read_ply(sample_dir / 'point_cloud.ply')
+        sample = {
+            "video_id": self.data_dir.name,
+            "package_id": sample_dir.stem,
+            "color_frame": color_frame,
+            "meta": meta,
+            "point_cloud": point_cloud,
+        }
+        return sample
 
 
 class OutputStream:
