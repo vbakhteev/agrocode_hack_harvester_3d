@@ -5,7 +5,6 @@ import open3d as o3d
 import pyrealsense2 as rs
 
 
-
 def get_extrinsic_and_intrinsic_camera_parameters(parameters, order='xyz'):
     intrinsic = o3d.camera.PinholeCameraIntrinsic(
         width=parameters['intrinsics']['width'],
@@ -125,15 +124,17 @@ class PointsProjection3D(BaseStep):
         top_phys_coords = []
         bot_phys_coords = []
         for point in top_points:
-            x = point[0]
-            y = point[1]
+            y = point[0]
+            x = point[1]
             depth = depth_image[x][y]
-            top_phys_coords.append(self.convert_depth_to_phys_coord_using_realsense(x,y,depth,parameters=sample['meta']))
+            top_phys_coords.append(
+                self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
         for point in bot_points:
-            x = point[0]
-            y = point[1]
+            y = point[0]
+            x = point[1]
             depth = depth_image[x][y]
-            bot_phys_coords.append(self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
+            bot_phys_coords.append(
+                self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
         sample['top_phys_coords'] = np.asarray(top_phys_coords)
         sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
         return sample
