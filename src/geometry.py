@@ -12,6 +12,13 @@ def check_point_is_outside(point: np.ndarray, max_y: int, max_x: int, eps: float
     return False
 
 
+def clip_point(point: np.ndarray, max_x: int, max_y: int) -> np.array:
+    x, y = point
+    x = min(max_x, max(0, x))
+    y = min(max_y, max(0, y))
+    return np.array([x, y])
+
+
 def final_point_rectangle(prev_point: np.ndarray, next_point: np.ndarray, next_next_point: np.ndarray) -> np.ndarray:
     directional_vector = next_point - next_next_point
     reconstructed_point = prev_point + directional_vector

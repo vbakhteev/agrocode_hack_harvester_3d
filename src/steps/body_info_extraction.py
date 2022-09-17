@@ -2,21 +2,54 @@ from collections import defaultdict
 from dataclasses import dataclass
 import typing as tp
 
+from filterpy.kalman import KalmanFilter
 import numpy as np
 
 from .base import BaseStep
-from ..geometry import final_point_rectangle, check_point_is_outside, project_to_2d
+from ..geometry import final_point_rectangle, check_point_is_outside, project_to_2d, clip_point
 from ..tracking_utils import HistoryBuffer
 
 
 @dataclass
 class CenterHistoryBuffer(HistoryBuffer):
-    max_memory = 10
+    max_memory = 20
 
     @property
     def value(self) -> float:
         assert self.is_initialized()
         return np.mean(self._data, axis=0)
+
+
+class CenterKalmanFilter:
+    def __init__(self):
+        self.kf_x = KalmanFilter(1, 1)
+        self.kf_y = KalmanFilter(1, 1)
+        self.kf_z = KalmanFilter(1, 1)
+
+        self.kf_x.H = np.array([[1]])
+        self.kf_y.H = np.array([[1]])
+        self.kf_z.H = np.array([[1]])
+
+    def update(self, w):
+        x, y, z = w
+        self.kf_x.update(x)
+        self.kf_y.update(y)
+        self.kf_z.update(z)
+
+    def predict(self):
+        self.kf_x.predict()
+        self.kf_y.predict()
+        self.kf_z.predict()
+
+    @property
+    def x(self):
+        return np.array([self.kf_x.x[0][0], self.kf_y.x[0][0], self.kf_z.x[0][0]])
+
+
+def define_kalman_filter_size() -> KalmanFilter:
+    k = KalmanFilter(dim_x=1, dim_z=1)
+    k.H = np.array([[1]])
+    return k
 
 
 class BodyInfoExtractionStep(BaseStep):
@@ -25,15 +58,38 @@ class BodyInfoExtractionStep(BaseStep):
         self.width_history = defaultdict(lambda: HistoryBuffer(max_memory=10))
         self.length_history = defaultdict(lambda: HistoryBuffer(max_memory=10))
 
+        self.center_kalman = defaultdict(CenterKalmanFilter)
+        self.width_kalman = defaultdict(define_kalman_filter_size)
+        self.length_kalman = defaultdict(define_kalman_filter_size)
+
     def call(self, sample: dict) -> dict:
+        video_id = sample["video_id"]
+
         # Reconstruct points
         image_height, image_width = sample["meta"]["intrinsics"]['height'], sample["meta"]["intrinsics"]['width']
 
+        self.width_kalman[video_id].predict()
+        self.length_kalman[video_id].predict()
+        self.center_kalman[video_id].predict()
+
+        sample["kalman_length"] = self.length_kalman[video_id].x[0][0]
+        sample["kalman_width"] = self.width_kalman[video_id].x[0][0]
+        sample["kalman_center"] = clip_point(
+            project_to_2d(self.center_kalman[video_id].x, sample["meta"]) / np.array([image_width, image_height]),
+            image_width,
+            image_height
+        )
+
         # TODO: Kalman filter continuation
         if not sample["top_points"].any():
-            sample['center'] = [0, 0]
-            sample["length"] = 0
-            sample["width"] = 0
+            sample['center'] = sample["kalman_center"]
+            self.center_kalman[video_id].update(self.center_kalman[video_id].x)
+
+            sample["length"] = sample["kalman_width"]
+            self.length_kalman[video_id].update(sample["kalman_length"])
+
+            sample["width"] = sample["kalman_length"]
+            self.width_kalman[video_id].update(sample["kalman_width"])
             return sample
 
         points_on_the_border_status = [
@@ -64,7 +120,11 @@ class BodyInfoExtractionStep(BaseStep):
         center_3d = (center_1 + center_2) / 2
 
         keypoints_2d_reconstructed_filtered = [
-            project_to_2d(kp, sample['meta']) / np.array([image_height, image_width]) for kp in keypoints_3d_reconstructed_filtered
+            clip_point(
+                project_to_2d(kp, sample['meta']) / np.array([image_height, image_width]),
+                image_width,
+                image_height
+            ) for kp in keypoints_3d_reconstructed_filtered
         ]
 
         width_1 = np.linalg.norm(keypoints_2d_reconstructed_filtered[0] - keypoints_2d_reconstructed_filtered[1])
@@ -78,21 +138,42 @@ class BodyInfoExtractionStep(BaseStep):
         sample["keypoints_2d_reconstructed"] = np.stack(keypoints_2d_reconstructed_filtered) * np.array([image_height, image_width]) / np.array([image_width, image_height])
 
         cur_length = max(length_1, length_2)
-        cur_length_buffer = self.length_history[sample["video_id"]]
+        cur_length_buffer = self.length_history[video_id]
         cur_length_buffer.add_value(cur_length)
-        sample["length"] = 0.7 * cur_length_buffer.value + 0.3 * cur_length
+        cur_length_adj = 0.7 * cur_length_buffer.value + 0.3 * cur_length
+
+        cur_kalman_length_value = self.width_kalman[video_id].x[0][0]
+        self.length_kalman[video_id].update(cur_length_adj)
+        if abs(cur_kalman_length_value) >= 1e-5:
+            sample["length"] = 0.5 * cur_length_adj + cur_kalman_length_value
+        else:
+            sample["length"] = cur_length_adj
 
         cur_width = max(width_1, width_2)
-        cur_width_buffer = self.width_history[sample["video_id"]]
+        cur_width_buffer = self.width_history[video_id]
         cur_width_buffer.add_value(cur_width)
-        sample["width"] = 0.7 * cur_width_buffer.value + 0.3 * cur_width
+        cur_width_adj = 0.7 * cur_width_buffer.value + 0.3 * cur_width
 
-        cur_center_buffer = self.center_history[sample["video_id"]]
+        cur_kalman_width_value = self.width_kalman[video_id].x[0][0]
+        self.width_kalman[video_id].update(cur_width_adj)
+        if abs(cur_kalman_width_value) >= 1e-5:
+            sample["width"] = 0.5 * cur_width_adj + cur_kalman_width_value
+        else:
+            sample["width"] = cur_width_adj
+
+        cur_center_buffer = self.center_history[video_id]
         cur_center_buffer.add_value(center_3d)
 
         adjusted_center = 0.7 * cur_center_buffer.value + 0.3 * center_3d
+        self.center_kalman[video_id].update(adjusted_center)
 
-        sample["center"] = project_to_2d(adjusted_center, sample['meta']) / np.array([image_width, image_height])
+        sample["center"] = clip_point(
+            project_to_2d(adjusted_center, sample['meta']) / np.array([image_width, image_height]),
+            image_width,
+            image_height
+        )
+        if np.linalg.norm(sample["kalman_center"] - np.array([0.0, 0.0])) > 1e-5:
+            sample["center"] = 0.5 * sample["center"] + 0.5 * sample["kalman_center"]
         return sample
 
     @staticmethod
