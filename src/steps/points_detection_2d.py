@@ -23,8 +23,8 @@ class PointsDetection2d(BaseStep):
         #     cv2.circle(img_draw, p, 5, (0, 0, 255), -1)
         # cv2.drawContours(img_draw, [bot_contour], -1, (0, 0, 255))
         
-        sample['bot_points'] = bot_points
-        sample['top_points'] = top_points
+        sample['bot_points'] = np.array(bot_points)
+        sample['top_points'] = np.array(top_points)
         return sample
 
 
