@@ -3,7 +3,6 @@ from pathlib import Path
 import typing as tp
 
 import cv2
-from tqdm import tqdm
 
 from src.data_steam import DataStream
 
@@ -20,6 +19,7 @@ def main():
             sample = istream[idx]
             save_path = f"frames/{video}_{idx}.jpg"
             cv2.imwrite(save_path, cv2.cvtColor(sample["color_frame"], cv2.COLOR_BGR2RGB))
+
 
 if __name__ == "__main__":
     main()
