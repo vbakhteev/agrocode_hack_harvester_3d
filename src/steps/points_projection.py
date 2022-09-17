@@ -5,7 +5,7 @@ import open3d as o3d
 import pyrealsense2 as rs
 
 
-def get_extrinsic_and_intrinsic_camera_parameters(parameters, order='xyz'):
+def get_extrinsic_and_intrinsic_camera_parameters(parameters, order='zxy'):
     intrinsic = o3d.camera.PinholeCameraIntrinsic(
         width=parameters['intrinsics']['width'],
         height=parameters['intrinsics']['height'],
@@ -26,7 +26,7 @@ def get_extrinsic_and_intrinsic_camera_parameters(parameters, order='xyz'):
     return cam_params, intrinsic, extrinsic
 
 
-def extrinsic_matrix(theta1, theta2, theta3, order='xyz'):
+def extrinsic_matrix(theta1, theta2, theta3, order='zxy'):
     """
     input
         theta1, theta2, theta3 = rotation angles in rotation order (degrees)
@@ -116,6 +116,8 @@ class PointsProjection2D(BaseStep):
 
 
 class PointsProjection3D(BaseStep):
+    def __init__(self):
+        pass
 
     def call(self, sample):
         top_points = sample['top_points']
@@ -123,25 +125,28 @@ class PointsProjection3D(BaseStep):
         depth_image = sample['depth_image']
         top_phys_coords = []
         bot_phys_coords = []
-        for point in top_points:
-            y = point[0]
-            x = point[1]
-            depth = depth_image[x][y]
-            if depth == 0:
-                depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
-            top_phys_coords.append(
-                self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
-        for point in bot_points:
-            y = point[0]
-            x = point[1]
-            depth = depth_image[x][y]
-            if depth == 0:
-                depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
-            bot_phys_coords.append(
-                self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
-        sample['top_phys_coords'] = np.asarray(top_phys_coords)
-        sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
-        sample['keypoints_3d'] = np.asarray(top_phys_coords)
+        if top_points.any():
+            for point in top_points:
+                y = point[0]
+                x = point[1]
+                depth = depth_image[x][y]
+                if depth == 0:
+                    depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
+                top_phys_coords.append(
+                    self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
+            sample['top_phys_coords'] = np.asarray(top_phys_coords)
+            sample['keypoints_3d'] = np.asarray(top_phys_coords)[[0, 3, 2, 1]]
+        if bot_points.any():
+            for point in bot_points:
+                y = point[0]
+                x = point[1]
+                depth = depth_image[x][y]
+                if depth == 0:
+                    depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
+                bot_phys_coords.append(
+                    self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
+            sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
+
         return sample
 
     def find_nearest_3d_point_depth(self, x, y, depth_image, parameters, expansion=1):
@@ -156,14 +161,26 @@ class PointsProjection3D(BaseStep):
         for candidate_point in candidate_points:
             x_hat = int(candidate_point[0])
             y_hat = int(candidate_point[1])
-            # print(x_hat, y_hat)
+            if x_hat >= 0:
+                x_hat = min(x_hat, parameters['intrinsics']['width'])
+            else:
+                x_hat = 0
+            if y_hat >= 0:
+                y_hat = min(y_hat, parameters['intrinsics']['height'])
+            else:
+                y_hat = 0
             depth = depth_image[x_hat][y_hat]
             if depth != 0:
                 return depth
         return self.find_nearest_3d_point_depth(x, y, depth_image, parameters, expansion + 1)
 
-    def convert_depth_to_phys_coord_using_realsense(self, x, y, depth, parameters):
+    def _get_camera_params(self, parameters):
         _intrinsics = rs.intrinsics()
+        _extrinsics = rs.extrinsics()
+        _, _, extrinsics = get_extrinsic_and_intrinsic_camera_parameters(parameters)
+        _extrinsics.rotation = list(extrinsics[:3, :3].reshape(-1))
+        _extrinsics.translation = list(extrinsics[:3, 3])
+
         _intrinsics.width = parameters['intrinsics']['width']
         _intrinsics.height = parameters['intrinsics']['height']
         _intrinsics.ppx = parameters['intrinsics']['ppx']
@@ -172,6 +189,9 @@ class PointsProjection3D(BaseStep):
         _intrinsics.fy = parameters['intrinsics']['fy']
         _intrinsics.model = rs.distortion.inverse_brown_conrady
         _intrinsics.coeffs = [i for i in parameters['intrinsics']['coeffs']]
+        return _intrinsics, _extrinsics
+
+    def convert_depth_to_phys_coord_using_realsense(self, x, y, depth, parameters):
+        _intrinsics, _extrinsics = self._get_camera_params(parameters)
         result = rs.rs2_deproject_pixel_to_point(_intrinsics, [x, y], depth)
-        # result[0]: right, result[1]: down, result[2]: forward
-        return [result[2], -result[0], -result[1]]
+        return [result[2], result[0], result[1]]

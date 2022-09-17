@@ -5,12 +5,13 @@ from typing import List
 from tqdm import tqdm
 
 from src.data_steam import DataStream, OutputStream
-from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D
+from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D, BodyInfoExtractionStep
 
 pipeline: List[BaseStep] = [
     PointsProjection2D(),
     PointsDetection2d(),
     PointsProjection3D(),
+    BodyInfoExtractionStep()
 ]
 
 
