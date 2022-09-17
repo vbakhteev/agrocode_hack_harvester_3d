@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 from typing import List
 
 from tqdm import tqdm
@@ -16,7 +17,7 @@ pipeline: List[BaseStep] = [
 
 def main(data_dir: str, output_dir: str):
     istream = DataStream(data_dir)
-    ostream = OutputStream(output_dir)
+    ostream = OutputStream(Path(output_dir) / Path(data_dir).name)
 
     for sample in tqdm(istream, total=len(istream)):
         for step in pipeline:
