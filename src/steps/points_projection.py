@@ -127,17 +127,40 @@ class PointsProjection3D(BaseStep):
             y = point[0]
             x = point[1]
             depth = depth_image[x][y]
+            if depth == 0:
+                depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
             top_phys_coords.append(
                 self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
         for point in bot_points:
             y = point[0]
             x = point[1]
             depth = depth_image[x][y]
+            if depth == 0:
+                depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
             bot_phys_coords.append(
                 self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
         sample['top_phys_coords'] = np.asarray(top_phys_coords)
         sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
+        sample['keypoints_3d'] = np.asarray(top_phys_coords)
         return sample
+
+    def find_nearest_3d_point_depth(self, x, y, depth_image, parameters, expansion=1):
+        for i in range(expansion):
+            Ys = np.linspace(y - expansion, y + expansion, 2 * expansion + 1)
+            Xs = np.linspace(x - expansion, x + expansion, 2 * expansion + 1)
+        y_s = np.concatenate([np.repeat([Ys[-1]], 2 * expansion + 1), np.repeat([Ys[0]], 2 * expansion + 1)])
+        x_s = np.concatenate([np.repeat([Xs[-1]], 2 * expansion + 1), np.repeat([Xs[0]], 2 * expansion + 1)])
+        horizontal_points = list(zip(np.repeat([Xs], 2, axis=0).reshape(-1), y_s))
+        vertical_points = list(zip(x_s, np.repeat([Ys], 2, axis=0).reshape(-1)))
+        candidate_points = np.concatenate([horizontal_points, vertical_points])
+        for candidate_point in candidate_points:
+            x_hat = int(candidate_point[0])
+            y_hat = int(candidate_point[1])
+            # print(x_hat, y_hat)
+            depth = depth_image[x_hat][y_hat]
+            if depth != 0:
+                return depth
+        return self.find_nearest_3d_point_depth(x, y, depth_image, parameters, expansion + 1)
 
     def convert_depth_to_phys_coord_using_realsense(self, x, y, depth, parameters):
         _intrinsics = rs.intrinsics()
