@@ -39,6 +39,7 @@ class WriteVideoStreamImageio:
         self.writer.write(frame[:, :, ::-1].copy())
 
     def close(self):
-        self.writer.release()
+        if self.writer is not None:
+            self.writer.release()
 
 

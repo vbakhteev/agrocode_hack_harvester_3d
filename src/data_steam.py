@@ -13,7 +13,7 @@ class DataStream:
         self.paths = list(self.data_dir.glob('package_*'))
         self.paths = sorted(
             self.paths, key=lambda p: int(p.stem.split('_')[1])
-        )
+        )[:10]
 
     def __len__(self):
         return len(self.paths)
@@ -53,7 +53,7 @@ class OutputStream:
         self.results = []
 
     def __call__(self, sample: dict) -> None:
-        image_draw = sample['color_frame'].copy()
+        # image_draw = sample['color_frame'].copy()
         # center = (
         #     np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
         #     np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
@@ -63,11 +63,21 @@ class OutputStream:
         #     image_draw, f"l={round(sample['length'], 4)}, w={round(sample['width'], 4)}", (50, 50),
         #     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA
         # )
-        self.video_stream(image_draw)
+        # self.video_stream(image_draw)
 
-        self.results.append({
-            k: sample.get(k) for k in ("package_id", "board_point_x", "board_point_y", "width", "height")
-        })
+        # {
+        #     k: sample.get(k) for k in ("package_id", "board_point_x", "board_point_y", "width", "height")
+        # }
+
+        sample_info = {
+            "package_id": sample["package_id"],
+            "board_point_x": sample['center'][0],
+            "board_point_y": sample['center'][1],
+            "width": sample['width'],
+            "height": sample['length']
+        }
+
+        self.results.append(sample_info)
 
     def close(self) -> None:
         self.video_stream.close()
