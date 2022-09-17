@@ -1,8 +1,6 @@
 import math
 
 import numpy as np
-import pyrealsense2 as rs
-from src.steps import PointsProjection3D
 
 
 def check_point_is_outside(point: np.ndarray, max_y: int, max_x: int, eps: float = 5) -> bool:

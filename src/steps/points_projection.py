@@ -105,7 +105,7 @@ class PointsProjection2D(BaseStep):
     def call(self, sample):
         vis = o3d.visualization.Visualizer()
         meta = sample['meta']
-        vis.create_window(width=meta["intrinsics"]['width'], height=meta["intrinsics"]['height'])
+        vis.create_window(width=meta["intrinsics"]['width'], height=meta["intrinsics"]['height'], visible=False)
         vis.add_geometry(sample['point_cloud'])
         view_ctl = vis.get_view_control()
         cam_params, intrinsic, extrinsic = get_extrinsic_and_intrinsic_camera_parameters(meta)
