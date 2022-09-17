@@ -13,7 +13,7 @@ class DataStream:
         self.paths = list(self.data_dir.glob('package_*'))
         self.paths = sorted(
             self.paths, key=lambda p: int(p.stem.split('_')[1])
-        )[:10]
+        )
 
     def __len__(self):
         return len(self.paths)
