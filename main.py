@@ -19,7 +19,6 @@ def main(data_dir: str, output_dir: str):
     ostream = OutputStream(output_dir)
 
     for sample in tqdm(istream, total=len(istream)):
-        sample['points_to_backproject'] = [[900, 1600], [900, 1800]]
         for step in pipeline:
             sample = step(sample)
         ostream(sample)
