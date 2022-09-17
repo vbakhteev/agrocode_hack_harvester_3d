@@ -14,16 +14,17 @@ class PointsDetection2d(BaseStep):
         bot_points, bot_contour = close_side_coords(image)
         top_points, top_contour = top_side_coords(image, bot_contour)
 
-        img_draw = image.copy()
-        if top_points is not None:
-            for p in top_points:
-                cv2.circle(img_draw, p, 5, (255, 0, 0), -1)
-            cv2.drawContours(img_draw, [top_contour], -1, (255, 0, 0))
-        for p in bot_points:
-            cv2.circle(img_draw, p, 5, (0, 0, 255), -1)
-        cv2.drawContours(img_draw, [bot_contour], -1, (0, 0, 255))
+        # img_draw = image.copy()
+        # if top_points is not None:
+        #     for p in top_points:
+        #         cv2.circle(img_draw, p, 5, (255, 0, 0), -1)
+        #     cv2.drawContours(img_draw, [top_contour], -1, (255, 0, 0))
+        # for p in bot_points:
+        #     cv2.circle(img_draw, p, 5, (0, 0, 255), -1)
+        # cv2.drawContours(img_draw, [bot_contour], -1, (0, 0, 255))
         
-        sample['detection_image'] = img_draw
+        sample['bot_points'] = bot_points
+        sample['top_points'] = top_points
         return sample
 
 
@@ -35,12 +36,8 @@ def get_orange_mask(img):
 
 def get_rectangle_coords(contour, img_h):
     contour = contour[:, 0].copy()
-    contour_for_sum = contour.copy()
 
-    # increase weight of y
-    contour_for_sum[:, 1] = contour_for_sum[:, 1] * 1.5
     coords_sum = contour.sum(1)
-
     left_top = contour[np.argmin(coords_sum)].copy()
     right_bot = contour[np.argmax(coords_sum)].copy()
 
