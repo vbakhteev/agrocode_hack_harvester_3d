@@ -12,12 +12,14 @@ from src.steps import (
     PointsProjection3D,
     SegmentationStep,
 )
+from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D, BodyInfoExtractionStep
 
 pipeline: List[BaseStep] = [
     PointsProjection2D(),
     PointsDetection2d(),
     PointsProjection3D(),
     # SegmentationStep('model.onnx'),
+    BodyInfoExtractionStep()
 ]
 
 
