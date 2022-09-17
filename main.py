@@ -4,13 +4,13 @@ from typing import List
 from tqdm import tqdm
 
 from src.data_steam import DataStream, OutputStream
-from src.steps import BaseStep, PointsDetection2d, PointsProjection2D
+from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D
 import matplotlib.pyplot as plt
 
 pipeline: List[BaseStep] = [
     PointsProjection2D(),
     PointsDetection2d(),
-
+    PointsProjection3D(),
 ]
 
 
@@ -19,6 +19,7 @@ def main(data_dir: str, output_dir: str):
     ostream = OutputStream(output_dir)
 
     for sample in tqdm(istream, total=len(istream)):
+        sample['points_to_backproject'] = [[900, 1600], [900, 1800]]
         for step in pipeline:
             sample = step(sample)
         ostream(sample)
