@@ -120,8 +120,8 @@ class PointsProjection3D(BaseStep):
         pass
 
     def call(self, sample):
-        top_points = sample['top_points']
-        bot_points = sample['bot_points']
+        top_points = sample['2d_points']
+        # bot_points = sample['bot_points']
         depth_image = sample['depth_image']
         top_phys_coords = []
         bot_phys_coords = []
@@ -136,16 +136,16 @@ class PointsProjection3D(BaseStep):
                     self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
             sample['top_phys_coords'] = np.asarray(top_phys_coords)
             sample['keypoints_3d'] = np.asarray(top_phys_coords)[[0, 3, 2, 1]]
-        if bot_points.any():
-            for point in bot_points:
-                y = point[0]
-                x = point[1]
-                depth = depth_image[x][y]
-                if depth == 0:
-                    depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
-                bot_phys_coords.append(
-                    self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
-            sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
+        # if bot_points.any():
+        #     for point in bot_points:
+        #         y = point[0]
+        #         x = point[1]
+        #         depth = depth_image[x][y]
+        #         if depth == 0:
+        #             depth = self.find_nearest_3d_point_depth(x, y, depth_image, parameters=sample['meta'], expansion=1)
+        #         bot_phys_coords.append(
+        #             self.convert_depth_to_phys_coord_using_realsense(x, y, depth, parameters=sample['meta']))
+        #     sample['bot_phys_coords'] = np.asarray(bot_phys_coords)
 
         return sample
 
