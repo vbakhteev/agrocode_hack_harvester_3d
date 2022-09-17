@@ -14,18 +14,24 @@ class SegmentationStep(BaseStep):
     
     def call(self, sample):
         orig_img = sample['color_frame']
-        img = cv2.resize(orig_img, dsize=(self.img_w, self.img_h))
-        img = (img / 255).astype(np.float32)
-        img = np.moveaxis(img, -1, 0)[None]
 
-        proba = self.model.forward(img)[0, 0]
-        mask = (proba > self.threshold).astype(np.uint8)
-        upsampled_mask = cv2.resize(mask, dsize=(orig_img.shape[1], orig_img.shape[0]))
+        mask = segment(orig_img, self.model, self.img_w, self.img_h, self.threshold)
 
-        sample['mask'] = upsampled_mask
+        sample['mask'] = mask
 
         return sample
 
+
+def segment(orig_img, model, w, h, threshold):
+    img = cv2.resize(orig_img, dsize=(w, h))
+    img = (img / 255).astype(np.float32)
+    img = np.moveaxis(img, -1, 0)[None]
+
+    proba = model.forward(img)[0, 0]
+    mask = (proba > threshold).astype(np.uint8)
+    upsampled_mask = cv2.resize(mask, dsize=(orig_img.shape[1], orig_img.shape[0]))
+
+    return upsampled_mask
 
 class OnnxRuntimeModel:
     def __init__(self, weights_path):
