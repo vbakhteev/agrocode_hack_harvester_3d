@@ -1,6 +1,8 @@
 import math
 
 import numpy as np
+import pyrealsense2 as rs
+from src.steps import PointsProjection3D
 
 
 def check_point_is_outside(point: np.ndarray, max_y: int, max_x: int, eps: float = 5) -> bool:
@@ -18,7 +20,8 @@ def final_point_rectangle(prev_point: np.ndarray, next_point: np.ndarray, next_n
     return reconstructed_point
 
 
-def reconstruct_rectangle_by_neighbour_points(ref_point1: np.ndarray, ref_point2: np.ndarray, length: float, offset: int) -> np.ndarray:
+def reconstruct_rectangle_by_neighbour_points(ref_point1: np.ndarray, ref_point2: np.ndarray, length: float,
+                                              offset: int) -> np.ndarray:
     direction_vector_r1_r2 = ref_point1 - ref_point2
     direction_vector_r1_r2 = direction_vector_r1_r2 / np.linalg.norm(direction_vector_r1_r2)
     theta = -math.pi / 2
@@ -56,3 +59,12 @@ def reconstruct_points(p1: np.ndarray, p3: np.ndarray, ratio: float, offset: int
     result = np.stack([p1, p2, p3, p4])
     offset_result = np.concatenate([result[-offset:], result[:-offset]])
     return offset_result
+
+
+def project_to_2d(point_3d, parameters):
+    Z = point_3d[0]
+    X = point_3d[1]
+    Y = point_3d[2]
+    u = (X / Z) * parameters['intrinsics']['fx'] + parameters['intrinsics']['ppx']
+    v = (Y / Z) * parameters['intrinsics']['fy'] + parameters['intrinsics']['ppy']
+    return u, v

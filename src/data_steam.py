@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pandas as pd
 
 from src.io import read_image, read_json, read_ply, WriteVideoStreamImageio
@@ -51,7 +53,14 @@ class OutputStream:
         self.results = []
 
     def __call__(self, sample: dict) -> None:
-        self.video_stream(sample['color_frame'])
+        image_draw = sample['color_frame'].copy()
+        center = (
+            np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
+            np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
+        )
+        # print(center)
+        cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
+        self.video_stream(image_draw)
 
         self.results.append({
             k: sample.get(k) for k in ("package_id", "board_point_x", "board_point_y", "width", "height")
