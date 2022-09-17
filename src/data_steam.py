@@ -65,14 +65,12 @@ class OutputStream:
         # )
         # self.video_stream(image_draw)
 
-        # {
-        #     k: sample.get(k) for k in ("package_id", "board_point_x", "board_point_y", "width", "height")
-        # }
+        center_to_log = sample["center"] / np.array([sample['meta']['intrinsics']["height"], sample['meta']['intrinsics']["width"]]) * np.array([sample['meta']['intrinsics']["width"], sample['meta']['intrinsics']["height"]])
 
         sample_info = {
             "package_id": sample["package_id"],
-            "board_point_x": sample['center'][0],
-            "board_point_y": sample['center'][1],
+            "board_point_x": center_to_log[1],
+            "board_point_y": center_to_log[0],
             "width": sample['width'],
             "height": sample['length']
         }
