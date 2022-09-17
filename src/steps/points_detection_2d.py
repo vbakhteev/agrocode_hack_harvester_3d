@@ -35,7 +35,12 @@ def get_orange_mask(img):
 
 def get_rectangle_coords(contour, img_h):
     contour = contour[:, 0].copy()
+    contour_for_sum = contour.copy()
+
+    # increase weight of y
+    contour_for_sum[:, 1] = contour_for_sum[:, 1] * 1.5
     coords_sum = contour.sum(1)
+
     left_top = contour[np.argmin(coords_sum)].copy()
     right_bot = contour[np.argmax(coords_sum)].copy()
 
@@ -49,15 +54,27 @@ def get_rectangle_coords(contour, img_h):
     return left_top, right_top, right_bot, left_bot
 
 
+def contour_dist(smaller_c, c2):
+    dist = 10e6
+    M = cv2.moments(smaller_c)
+    cX = int(M['m10'] / M['m00'])
+    cY = int(M['m01'] / M['m00'])
+    for p2 in c2:
+        d = ((cX - p2[0, 0]) ** 2 + (cY - p2[0, 1]) ** 2) ** 0.5
+        dist = min(d, dist)
+    return dist
+
+
 def close_side_coords(img):
     mask = get_orange_mask(img)
 
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.erode(mask, kernel, iterations=1)
-    mask = cv2.dilate(mask, kernel, iterations=1)
+    mask = cv2.dilate(mask, kernel, iterations=2)
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     biggest_contours = sorted(contours, key=cv2.contourArea)[-2:]
-    if cv2.contourArea(biggest_contours[0]) / cv2.contourArea(biggest_contours[1]) < 0.2:
+    if (cv2.contourArea(biggest_contours[0]) / cv2.contourArea(biggest_contours[1]) < 0.2) or \
+        (contour_dist(biggest_contours[0], biggest_contours[1]) > 100):
         biggest_contours = [biggest_contours[1]]
     biggest_contour = np.concatenate(biggest_contours, axis=0)
     biggest_contour = cv2.convexHull(biggest_contour)

@@ -8,7 +8,7 @@ from src.steps import BaseStep, PointsDetection2d, PointsProjection2D
 import matplotlib.pyplot as plt
 
 pipeline: List[BaseStep] = [
-    PointsProjection2D(),
+    # PointsProjection2D(),
     PointsDetection2d(),
 
 ]
