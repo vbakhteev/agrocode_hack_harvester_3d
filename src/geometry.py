@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import typing as tp
 
 
 def check_point_is_outside(point: np.ndarray, max_y: int, max_x: int, eps: float = 5) -> bool:
@@ -26,7 +27,7 @@ def final_point_rectangle(prev_point: np.ndarray, next_point: np.ndarray, next_n
 
 
 def reconstruct_rectangle_by_neighbour_points(ref_point1: np.ndarray, ref_point2: np.ndarray, length: float,
-                                              offset: int) -> np.ndarray:
+                                              offset: int) -> tp.List[float]:
     direction_vector_r1_r2 = ref_point1 - ref_point2
     direction_vector_r1_r2 = direction_vector_r1_r2 / np.linalg.norm(direction_vector_r1_r2)
     theta = -math.pi / 2
@@ -39,11 +40,11 @@ def reconstruct_rectangle_by_neighbour_points(ref_point1: np.ndarray, ref_point2
     ref_point3 = ref_point2 + direction_vector_r3_r2
     ref_point4 = final_point_rectangle(ref_point3, ref_point1, ref_point2)
     result = np.stack([ref_point1, ref_point2, ref_point3, ref_point4])
-    offset_result = np.concatenate([result[-offset:], result[:-offset]])
+    offset_result = [*result[-offset:], *result[:-offset]]
     return offset_result
 
 
-def reconstruct_points(p1: np.ndarray, p3: np.ndarray, ratio: float, offset: int) -> np.ndarray:
+def reconstruct_points(p1: np.ndarray, p3: np.ndarray, ratio: float, offset: int) -> tp.List[float]:
     # Если обходить точки против часовой стрелки, то ratio - отношение длины
     # более раннего отрезка к более позднему
     p1_p3_dist = np.linalg.norm(p1 - p3)
@@ -62,7 +63,7 @@ def reconstruct_points(p1: np.ndarray, p3: np.ndarray, ratio: float, offset: int
     p2 = p1 + p2_p1_vector * p1_p2_dist
     p4 = p3 - p2_p1_vector * p1_p2_dist
     result = np.stack([p1, p2, p3, p4])
-    offset_result = np.concatenate([result[-offset:], result[:-offset]])
+    offset_result = [*result[-offset:], *result[:-offset]]
     return offset_result
 
 

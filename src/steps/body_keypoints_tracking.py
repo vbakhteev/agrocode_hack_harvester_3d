@@ -1,46 +1,41 @@
-import math
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import typing as tp
 
 import numpy as np
 
 from .base import BaseStep
 from ..geometry import final_point_rectangle, reconstruct_rectangle_by_neighbour_points, reconstruct_points
+from ..tracking_utils import HistoryBuffer
 
 
 @dataclass
 class DimensionsInfoTracker:
     end_ratio: float = 0.1
     _max_memory: int = 100
-    _lengths_history: tp.List[float] = field(default_factory=list)
-    _widths_history: tp.List[float] = field(default_factory=list)
+    _lengths_buffer: tp.Optional[HistoryBuffer] = None
+    _widths_buffer: tp.Optional[HistoryBuffer] = None
+
+    def __post_init__(self) -> None:
+        self._lengths_buffer = HistoryBuffer(end_ratio=self.end_ratio, max_memory=self._max_memory)
+        self._widths_buffer = HistoryBuffer(end_ratio=self.end_ratio, max_memory=self._max_memory)
 
     def is_initialized(self) -> bool:
-        return len(self._lengths_history) > 0 and len(self._widths_history) > 0
+        return self._lengths_buffer.is_initialized() and self._widths_buffer.is_initialized()
 
     def add_length(self, length: float) -> None:
-        self._lengths_history.append(length)
-        if len(self._lengths_history) > self._max_memory:
-            self._lengths_history = self._lengths_history[1:]
+        self._lengths_buffer.add_value(length)
 
     def add_width(self, width: float) -> None:
-        self._widths_history.append(width)
-        if len(self._widths_history) > self._max_memory:
-            self._widths_history = self._widths_history[1:]
+        self._widths_buffer.add_value(width)
 
     @property
     def length(self) -> float:
-        return np.mean(self._filter_extra_values(self._lengths_history, self.end_ratio))
+        return self._lengths_buffer.value
 
     @property
     def width(self) -> float:
-        return np.mean(self._filter_extra_values(self._widths_history, self.end_ratio))
-
-    @staticmethod
-    def _filter_extra_values(values: tp.List[float], end_ratio: float) -> tp.List[float]:
-        total_elements_from_end = math.floor(len(values) * end_ratio)
-        return sorted(values)[total_elements_from_end: -total_elements_from_end]
+        return self._widths_buffer.value
 
 
 class BodyKeypointsTracking(BaseStep):
@@ -57,10 +52,14 @@ class BodyKeypointsTracking(BaseStep):
         keypoints_3d_reconstructed_filtered = np.stack([
             coord[:2] for coord in sample["keypoints_3d_reconstructed"]
         ])
+
+        # Трекинг и восстановление точек
         sample["tracked_coords"] = None
         if sum(points_on_the_border_status) == 0:
-            sample["tracked_coords"] = keypoints_3d_reconstructed_filtered
+            print("No reconstruction needed")
+            sample["tracked_coords"] = list(keypoints_3d_reconstructed_filtered)
         elif sum(points_on_the_border_status) == 1:
+            print("Three points reconstruction")
             idx = np.where(points_on_the_border_status)[0][0]
 
             prev_point = keypoints_3d_reconstructed_filtered[idx - 1]
@@ -71,41 +70,64 @@ class BodyKeypointsTracking(BaseStep):
             tracked_coords = keypoints_3d_reconstructed_filtered
             tracked_coords[idx] = final_point
 
-            sample["tracked_coords"] = tracked_coords
+            sample["tracked_coords"] = list(tracked_coords)
 
         elif sum(points_on_the_border_status) == 2 and cur_session_info.is_initialized():
+            print("Two points reconstruction")
             full_body_length, full_body_width = cur_session_info.length, cur_session_info.width
 
             if points_on_the_border_status[0] and points_on_the_border_status[1]:
+                print("Rec 1")
                 ref_point3, ref_point4 = keypoints_3d_reconstructed_filtered[2], keypoints_3d_reconstructed_filtered[3]
                 sample["tracked_coords"] = reconstruct_rectangle_by_neighbour_points(ref_point3, ref_point4, full_body_length, 2)
             elif points_on_the_border_status[0] and points_on_the_border_status[2]:
+                print("Rec 2")
                 ratio = full_body_width / full_body_length
                 ref_point2, ref_point4 = keypoints_3d_reconstructed_filtered[1], keypoints_3d_reconstructed_filtered[3]
                 sample["tracked_coords"] = reconstruct_points(ref_point2, ref_point4, ratio, offset=1)
             elif points_on_the_border_status[0] and points_on_the_border_status[3]:
+                print("Rec 3")
                 ref_point2, ref_point3 = keypoints_3d_reconstructed_filtered[1], keypoints_3d_reconstructed_filtered[2]
                 sample["tracked_coords"] = reconstruct_rectangle_by_neighbour_points(ref_point2, ref_point3, full_body_width, 1)
             elif points_on_the_border_status[1] and points_on_the_border_status[2]:
+                print("Rec 4")
                 ref_point4, ref_point1 = keypoints_3d_reconstructed_filtered[3], keypoints_3d_reconstructed_filtered[0]
                 sample["tracked_coords"] = reconstruct_rectangle_by_neighbour_points(ref_point4, ref_point1, full_body_width, 3)
             elif points_on_the_border_status[1] and points_on_the_border_status[3]:
+                print("Rec 5")
                 ratio = full_body_length / full_body_width
                 ref_point1, ref_point3 = keypoints_3d_reconstructed_filtered[0], keypoints_3d_reconstructed_filtered[2]
                 sample["tracked_coords"] = reconstruct_points(ref_point1, ref_point3, ratio, offset=0)
             elif points_on_the_border_status[2] and points_on_the_border_status[3]:
+                print("Rec 6")
                 ref_point1, ref_point2 = keypoints_3d_reconstructed_filtered[0], keypoints_3d_reconstructed_filtered[1]
                 sample["tracked_coords"] = reconstruct_rectangle_by_neighbour_points(ref_point1, ref_point2, full_body_length, 0)
-        elif "tracked_coords" not in sample:
-            sample["tracked_coords"] = None
+        else:
+            print("No reconstruction available")
+        # Добавление z координат к точкам
 
-        # TODO: добавить z координаты к выходу
+        if sample["tracked_coords"] is not None:
+            default_z_value = sample["keypoints_3d_reconstructed"][~points_on_the_border_status][:, 2].mean()
+
+            for i, tracked_point in enumerate(sample["tracked_coords"]):
+                found_pair = False
+
+                for j, (given_point, given_point_outside_status) in enumerate(zip(sample["keypoints_3d_reconstructed"], points_on_the_border_status)):
+                    if np.linalg.norm(tracked_point - given_point[:2]) < 1e-4 and not given_point_outside_status:
+                        sample["tracked_coords"][i] = given_point
+                        found_pair = True
+                        break
+                if not found_pair:
+                    sample["tracked_coords"][i] = np.array([tracked_point[0], tracked_point[1], default_z_value])
+            sample["tracked_coords"] = np.stack(sample["tracked_coords"])
+
+        # Сохранение инфы о ширине и высоте
 
         cur_widths = []
         cur_lengths = []
         if not points_on_the_border_status[0] and not points_on_the_border_status[1]:
             cur_widths.append(
-                np.linalg.norm(np.keypoints_3d_reconstructed_filtered[0] - keypoints_3d_reconstructed_filtered[1])
+                np.linalg.norm(keypoints_3d_reconstructed_filtered[0] - keypoints_3d_reconstructed_filtered[1])
             )
         if not points_on_the_border_status[2] and not points_on_the_border_status[3]:
             cur_widths.append(
@@ -128,7 +150,7 @@ class BodyKeypointsTracking(BaseStep):
             cur_length = np.mean(cur_lengths)
             cur_session_info.add_length(cur_length)
 
-        full_body_length, full_body_width = None, None
+        full_body_length, full_body_width = 0, 0
         if cur_session_info.is_initialized():
             full_body_length = cur_session_info.length
             full_body_width = cur_session_info.width

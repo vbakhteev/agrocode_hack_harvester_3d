@@ -6,21 +6,19 @@ from tqdm import tqdm
 
 from src.data_steam import DataStream, OutputStream
 from src.steps import (
-    BaseStep,
-    PointsProjection2D,
     SegmentationStep,
     DetectPointsOnMask,
-    PointsProjection3D,
 
 )
-from src.steps import BaseStep, PointsDetection2d, PointsProjection2D, PointsProjection3D, BodyInfoExtractionStep
+from src.steps import BaseStep, PointsProjection2D, PointsProjection3D, BodyInfoExtractionStep, BodyKeypointsTracking
 
 pipeline: List[BaseStep] = [
     SegmentationStep('model.onnx'),
     DetectPointsOnMask(),
     PointsProjection2D(),
     PointsProjection3D(),
-    BodyInfoExtractionStep()
+    BodyInfoExtractionStep(),
+    # BodyKeypointsTracking()
 ]
 
 
