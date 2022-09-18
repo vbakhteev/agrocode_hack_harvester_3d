@@ -16,9 +16,21 @@ class DetectPointsOnMask(BaseStep):
         biggest_contour = max(contours, key=cv2.contourArea)
         biggest_contour = cv2.convexHull(biggest_contour)
 
-        points = get_rectangle_coords(
+        sample["contour"] = biggest_contour
+
+        points = list(get_rectangle_coords(
             biggest_contour, h=mask.shape[0], w=mask.shape[1],
-        )
+        ))
+
+        sample['top_points_old'] = np.array(points)
+
+        # sample['top_points'] = np.array(points)
+        # return sample
+
+        for i, point in enumerate(points):
+            close_points = [p[0] for p in biggest_contour if np.linalg.norm(point - p[0]) < 75]
+            points[i] = np.round(np.mean(close_points, axis=0)).astype('int')
+
         sample['top_points'] = np.array(points)
 
         return sample

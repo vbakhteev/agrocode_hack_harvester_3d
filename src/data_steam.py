@@ -53,42 +53,52 @@ class OutputStream:
         self.results = []
 
     def __call__(self, sample: dict) -> None:
-        # image_draw = sample['color_frame'].copy()
-        # center = (
-        #     np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
-        #     np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
-        # )
-        # cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
-        #
-        # for p in sample["keypoints_2d_reconstructed"]:
-        #     center = (
-        #         np.floor(p[1] * sample['meta']['intrinsics']["height"]).astype(int),
-        #         np.floor(p[0] * sample['meta']['intrinsics']["width"]).astype(int)
-        #     )
-        #     cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
-        #
-        # cv2.putText(
-        #     image_draw, f"l={round(sample['length'], 4)}, w={round(sample['width'], 4)}", (50, 50),
-        #     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA
-        # )
-        #
-        # if sample.get("tracked_coords") is not None:
-        #     cv2.putText(
-        #         image_draw,
-        #         f"+,w={round(sample.get('full_body_width', 0), 4)},l={round(sample.get('full_body_length', 0), 4)}",
-        #         (50, 100),
-        #         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
-        #     )
-        # else:
-        #     cv2.putText(
-        #         image_draw,
-        #         f"-,w={round(sample.get('full_body_width', 0), 4)},l={round(sample.get('full_body_length', 0), 4)}",
-        #         (50, 100),
-        #         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
-        #     )
-        #
-        #
-        # self.video_stream(image_draw)
+        image_draw = sample['color_frame'].copy()
+        center = (
+            np.floor(sample['center'][1] * sample['meta']['intrinsics']["height"]).astype(int),
+            np.floor(sample['center'][0] * sample['meta']['intrinsics']["width"]).astype(int)
+        )
+        cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
+
+        for p in sample["keypoints_2d_reconstructed"]:
+            center = (
+                np.floor(p[1] * sample['meta']['intrinsics']["height"]).astype(int),
+                np.floor(p[0] * sample['meta']['intrinsics']["width"]).astype(int)
+            )
+            cv2.circle(image_draw, center, 10, (255, 0, 0), thickness=-1)
+
+        for p in sample["contour"]:
+            cv2.circle(image_draw, p[0], 10, (0, 255, 0), thickness=-1)
+
+        for p in sample["top_points"]:
+            cv2.circle(image_draw, p, 10, (0, 0, 255), thickness=-1)
+
+        if "top_points_old" in sample:
+            for p in sample["top_points"]:
+                cv2.circle(image_draw, p, 10, (0, 255, 255), thickness=-1)
+
+        cv2.putText(
+            image_draw, f"l={round(sample['length'], 4)}, w={round(sample['width'], 4)}", (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA
+        )
+
+        if sample.get("tracked_coords") is not None:
+            cv2.putText(
+                image_draw,
+                f"+,w={round(sample.get('full_body_width', 0), 4)},l={round(sample.get('full_body_length', 0), 4)}",
+                (50, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
+            )
+        else:
+            cv2.putText(
+                image_draw,
+                f"-,w={round(sample.get('full_body_width', 0), 4)},l={round(sample.get('full_body_length', 0), 4)}",
+                (50, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA
+            )
+
+
+        self.video_stream(image_draw)
 
         center_to_log = sample["center"] / np.array([sample['meta']['intrinsics']["height"], sample['meta']['intrinsics']["width"]]) * np.array([sample['meta']['intrinsics']["width"], sample['meta']['intrinsics']["height"]])
 
