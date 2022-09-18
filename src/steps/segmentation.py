@@ -7,6 +7,7 @@ from .base import BaseStep
 
 class SegmentationStep(BaseStep):
     def __init__(self, weights_path, img_h=160, img_w=288, threshold=0.5):
+        super().__init__()
         self.img_h = img_h
         self.img_w = img_w
         self.threshold = threshold

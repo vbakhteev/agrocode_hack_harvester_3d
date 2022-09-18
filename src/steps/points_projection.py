@@ -116,9 +116,6 @@ class PointsProjection2D(BaseStep):
 
 
 class PointsProjection3D(BaseStep):
-    def __init__(self):
-        pass
-
     def call(self, sample):
         top_points = sample['top_points']
         # bot_points = sample['bot_points']
