@@ -162,14 +162,22 @@ class PointsProjection3D(BaseStep):
         for candidate_point in candidate_points:
             x_hat = int(candidate_point[0])
             y_hat = int(candidate_point[1])
+            # 1920 1080
+            # print(parameters['intrinsics']['width'], parameters['intrinsics']['height'])
+
+            # 1080 xxx
+            # print(x_hat, y_hat)
             if x_hat >= 0:
-                x_hat = min(x_hat, parameters['intrinsics']['width'])
+                # x_hat = min(x_hat, parameters['intrinsics']['width'] - 1)
+                x_hat = min(x_hat, parameters['intrinsics']['height'] - 1)
             else:
                 x_hat = 0
             if y_hat >= 0:
-                y_hat = min(y_hat, parameters['intrinsics']['height'])
+                y_hat = min(y_hat, parameters['intrinsics']['height']- 1)
             else:
                 y_hat = 0
+            # 1080 xxx
+            # print(x_hat, y_hat)
             depth = depth_image[x_hat][y_hat]
             if depth != 0:
                 return depth
