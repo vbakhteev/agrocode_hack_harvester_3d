@@ -46,6 +46,7 @@ class BodyKeypointsTracking(BaseStep):
     # TODO: может надо как-то восстановленное объединять с предыдущим восстановленным
     # TODO: можно инициализироваться по 2 точкам
     def call(self, sample: dict) -> dict:
+        metadata = sample["meta"]
         cur_session_info = self.body_info[sample["video_id"]]
 
         points_on_the_border_status = sample["keypoints_on_the_border_status"]
@@ -74,7 +75,14 @@ class BodyKeypointsTracking(BaseStep):
 
         elif sum(points_on_the_border_status) == 2 and cur_session_info.is_initialized():
             print("Two points reconstruction")
+
             full_body_length, full_body_width = cur_session_info.length, cur_session_info.width
+
+            if "full_body_length" in metadata:
+                full_body_length = metadata["full_body_length"]
+
+            if "full_body_width" in metadata:
+                full_body_width = metadata["full_body_width"]
 
             if points_on_the_border_status[0] and points_on_the_border_status[1]:
                 print("Rec 1")
@@ -144,18 +152,27 @@ class BodyKeypointsTracking(BaseStep):
 
         if len(cur_widths) > 0:
             cur_width = np.mean(cur_widths)
-            cur_session_info.add_width(cur_width)
+            if "full_body_width" in metadata:
+                cur_session_info.add_width(metadata["full_body_width"])
+            else:
+                cur_session_info.add_width(cur_width)
 
         if len(cur_lengths) > 0:
             cur_length = np.mean(cur_lengths)
-            cur_session_info.add_length(cur_length)
+            if "full_body_length" in metadata:
+                cur_session_info.add_length(metadata["full_body_length"])
+            else:
+                cur_session_info.add_length(cur_length)
 
         full_body_length, full_body_width = 0, 0
         if cur_session_info.is_initialized():
             full_body_length = cur_session_info.length
             full_body_width = cur_session_info.width
 
-        sample["full_body_length"] = full_body_length
-        sample["full_body_width"] = full_body_width
+        if "full_body_length" not in metadata:
+            sample["full_body_length"] = full_body_length
+
+        if "full_body_width" not in metadata:
+            sample["full_body_width"] = full_body_width
 
         return sample
