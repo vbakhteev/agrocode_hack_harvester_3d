@@ -54,6 +54,7 @@ def define_kalman_filter_size() -> KalmanFilter:
 
 class BodyInfoExtractionStep(BaseStep):
     def __init__(self) -> None:
+        super().__init__()
         self.center_history = defaultdict(CenterHistoryBuffer)
         self.width_history = defaultdict(lambda: HistoryBuffer(max_memory=10))
         self.length_history = defaultdict(lambda: HistoryBuffer(max_memory=10))

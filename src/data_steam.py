@@ -74,7 +74,9 @@ class OutputStream:
         self.results.append(sample_info)
 
     def close(self) -> None:
-        self.video_stream.close()
+        if self.video_stream is not None:
+            self.video_stream.close()
+
         df_results = pd.DataFrame(self.results)
         df_results.to_csv(self.data_dir / 'submission.csv', index=False)
     

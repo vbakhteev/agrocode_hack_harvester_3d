@@ -40,6 +40,7 @@ class DimensionsInfoTracker:
 
 class BodyKeypointsTracking(BaseStep):
     def __init__(self):
+        super().__init__()
         self.body_info = defaultdict(DimensionsInfoTracker)
 
     # TODO: implement 3d coords
