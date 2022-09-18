@@ -125,7 +125,7 @@ class PointsProjection3D(BaseStep):
         depth_image = sample['depth_image']
         top_phys_coords = []
         bot_phys_coords = []
-        if top_points.any():
+        if top_points is not None:
             for point in top_points:
                 y = point[0]
                 x = point[1]
