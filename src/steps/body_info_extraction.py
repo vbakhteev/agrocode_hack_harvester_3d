@@ -142,14 +142,15 @@ class BodyInfoExtractionStep(BaseStep):
         cur_length_buffer.add_value(cur_length)
         cur_length_adj = 0.7 * cur_length_buffer.value + 0.3 * cur_length
 
-        cur_kalman_length_value = self.width_kalman[video_id].x[0][0]
+        cur_kalman_length_value = self.length_kalman[video_id].x[0][0]
         self.length_kalman[video_id].update(cur_length_adj)
         if abs(cur_kalman_length_value) >= 1e-5:
-            sample["length"] = 0.5 * cur_length_adj + cur_kalman_length_value
+            sample["length"] = 0.5 * cur_length_adj + 0.5 * cur_kalman_length_value
         else:
             sample["length"] = cur_length_adj
 
         cur_width = max(width_1, width_2)
+
         cur_width_buffer = self.width_history[video_id]
         cur_width_buffer.add_value(cur_width)
         cur_width_adj = 0.7 * cur_width_buffer.value + 0.3 * cur_width
@@ -157,7 +158,7 @@ class BodyInfoExtractionStep(BaseStep):
         cur_kalman_width_value = self.width_kalman[video_id].x[0][0]
         self.width_kalman[video_id].update(cur_width_adj)
         if abs(cur_kalman_width_value) >= 1e-5:
-            sample["width"] = 0.5 * cur_width_adj + cur_kalman_width_value
+            sample["width"] = 0.5 * cur_width_adj + 0.5 * cur_kalman_width_value
         else:
             sample["width"] = cur_width_adj
 
