@@ -81,7 +81,7 @@ class BodyInfoExtractionStep(BaseStep):
         )
 
         # TODO: Kalman filter continuation
-        if not sample["top_points"].any():
+        if sample["top_points"] is None:
             sample['center'] = sample["kalman_center"]
             self.center_kalman[video_id].update(self.center_kalman[video_id].x)
 
