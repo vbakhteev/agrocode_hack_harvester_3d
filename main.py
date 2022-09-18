@@ -34,10 +34,13 @@ def main(data_dir: str, output_dir: str):
     ostream.close()
 
     print("#" * 50)
+    total = 0
     for step in pipeline:
         mean, std, max_ = step.get_time_spent()
+        total += mean
         name = type(step).__name__
         print(f"{name}: mean={mean:.4f}s, std={std:.4f}s, max={max_:.4f}s")
+    print(f"Total: {total:.4f}s")
 
 
 if __name__ == '__main__':
